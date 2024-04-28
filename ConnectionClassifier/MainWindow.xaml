@@ -1,0 +1,13 @@
+﻿<Window x:Class="ConnectionClassifier.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:ConnectionClassifier"
+        mc:Ignorable="d"
+        Title="Connection Classification" Height="300" Width="600">
+    <Grid>
+        <Button Content="Classify Connections" HorizontalAlignment="Left" Margin="33,35,0,0" VerticalAlignment="Top" Click="Button_Click_6"/>
+        <Label Content="Spent Time" x:Name="bboxClashIter" HorizontalAlignment="Left" Margin="178,35,0,0" VerticalAlignment="Top"/>
+    </Grid>
+</Window>
