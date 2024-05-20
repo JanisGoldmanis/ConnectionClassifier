@@ -9,5 +9,13 @@
     <Grid>
         <Button Content="Classify Connections" HorizontalAlignment="Left" Margin="33,35,0,0" VerticalAlignment="Top" Click="Button_Click_6"/>
         <Label Content="Spent Time" x:Name="bboxClashIter" HorizontalAlignment="Left" Margin="178,35,0,0" VerticalAlignment="Top"/>
+        <TextBox x:Name="ConfigLocationTextBox" HorizontalAlignment="Left" Margin="104,109,0,0" TextWrapping="NoWrap" Text="" VerticalAlignment="Top" Width="120"/>
+        <Button Content="Browse" HorizontalAlignment="Left" Margin="229,108,0,0" VerticalAlignment="Top" Click="Button_Click"/>
+        <TextBox x:Name="ListsLocationTextBox" HorizontalAlignment="Left" Margin="104,142,0,0" TextWrapping="NoWrap" Text="" VerticalAlignment="Top" Width="120"/>
+        <Button Content="Browse" HorizontalAlignment="Left" Margin="230,141,0,0" VerticalAlignment="Top" Click="Button_Click_1"/>
+        <Label Content="Config" HorizontalAlignment="Left" Margin="36,105,0,0" VerticalAlignment="Top"/>
+        <Label Content="Lists" HorizontalAlignment="Left" Margin="36,138,0,0" VerticalAlignment="Top"/>
+        <Label Content="Tolerance" HorizontalAlignment="Left" Margin="36,181,0,0" VerticalAlignment="Top"/>
+        <TextBox x:Name="ToleranceTextBox" HorizontalAlignment="Left" Margin="104,185,0,0" TextWrapping="NoWrap" Text="5" VerticalAlignment="Top" Width="120"/>
     </Grid>
 </Window>

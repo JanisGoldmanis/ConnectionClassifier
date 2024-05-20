@@ -1,8 +1,10 @@
 ﻿using ConnectionClassifier.Csv;
 using ConnectionClassifier.GeometryCalculations;
+using Microsoft.Win32;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -37,6 +39,13 @@ namespace ConnectionClassifier
         {
             InitializeComponent();
             DataContext = this;
+            ToleranceTextBox.Text = "200";
+
+            if (Debugger.IsAttached)
+            {
+                ConfigLocationTextBox.Text = "C:\\Users\\janis.goldmanis\\Downloads\\ConnectionClassificationConfig\\config.json";
+                ListsLocationTextBox.Text = "C:\\Users\\janis.goldmanis\\Downloads\\ConnectionClassificationConfig\\lists.json";
+            }
         }
 
         //private void Button_Click(object sender, RoutedEventArgs e)
@@ -56,6 +65,28 @@ namespace ConnectionClassifier
 
         //    Operation.DisplayPrompt(string.Format("Hello world! Current model is named: {0}", name));
         //}
+        public static List<int>[][][] GetModelLists(ModelParameters modelParameters, List<PartObject> partObjects, double tolerance)
+        {
+            double maxXSize = modelParameters.maxXLength + tolerance;
+            double xLength = modelParameters.maxX - modelParameters.minX;
+            double maxYSize = modelParameters.maxYLength + tolerance;
+            double yLength = modelParameters.maxY - modelParameters.minY;
+            double maxZSize = modelParameters.maxZLength + tolerance;
+            double zLength = modelParameters.maxZ - modelParameters.minZ;
+
+            int xCount = (int)Math.Ceiling(xLength / maxXSize);
+            int yCount = (int)Math.Ceiling(yLength / maxYSize);
+            int zCount = (int)Math.Ceiling(zLength / maxZSize);
+
+            List<int>[][][] data = new List<int>[partObjects.Count][][];
+
+
+
+
+            return data;
+        }
+
+
 
         public void Button_Click_6(object sender, RoutedEventArgs e)
         {
@@ -64,9 +95,13 @@ namespace ConnectionClassifier
 
 
                 DateTime startTime = DateTime.Now;
+                int clashTolerance = int.Parse(ToleranceTextBox.Text);
+
 
                 var bbox = new BoundingBox();
-                List<PartObject> partObjects = bbox.GetClassificationPartObjects();
+                (List<PartObject> partObjects, ModelParameters modelParameters) = bbox.GetClassificationPartObjects();
+
+                var data = GetModelLists(modelParameters, partObjects, clashTolerance);
 
                 DateTime objectsCreatedTime = DateTime.Now;
 
@@ -76,48 +111,88 @@ namespace ConnectionClassifier
                 //// Subscribe to the ClashProgress event
                 //clashDetection.ClashProgress += ClashDetection_ClashProgress;
 
-                int clashTolerance = 200;
 
-                List<ConnectionObject> connectionObjects = clashDetection.ClashDetectionBruteForce(partObjects, clashTolerance);
+
+                int roundingTolerance = 1;
+
+                List<ConnectionObject> connectionObjects = clashDetection.ClashDetectionBruteForce(partObjects, clashTolerance, roundingTolerance);
 
                 DateTime endTime = DateTime.Now;
                 TimeSpan duration = endTime - startTime;
                 TimeSpan createdObjectsSpan = objectsCreatedTime - startTime;
 
-                bboxClashIter.Content = $"{createdObjectsSpan.ToString()}\n{duration.ToString()}";
+                var configLocation = ConfigLocationTextBox.Text;
+                var jsonListsLocation = ListsLocationTextBox.Text;
 
-                var json = ParseJson.ParseJson.ReadJsonFile("config - HCS anchors on walls.json");
-                var jsonLists = ParseJson.ParseJson.ReadJsonFile("lists.json")["lists"];
+                var json = ParseJson.ParseJson.ReadJsonFile(configLocation);
+                var jsonLists = ParseJson.ParseJson.ReadJsonFile(jsonListsLocation)["lists"];
 
                 var jsonParser = new ParseJson.ParseJson();
 
-                int tolerance = 1;
+
 
                 Dictionary<string, int> typeCount = new Dictionary<string, int>();
 
                 foreach (var connectionObject in connectionObjects)
                 {
-                    jsonParser.ClassifyConnection(connectionObject, json, jsonLists, tolerance);
-                    string type = connectionObject.ConnetionType;
-
-                    if (!typeCount.ContainsKey(type))
+                    try
                     {
-                        typeCount[type] = 0;
+                        jsonParser.ClassifyConnection(connectionObject, json, jsonLists, roundingTolerance);
+                        string type = connectionObject.ConnetionType;
+
+                        if (!typeCount.ContainsKey(type))
+                        {
+                            typeCount[type] = 0;
+                        }
+                        typeCount[type] += 1;
                     }
-                    typeCount[type] += 1;
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show(ex.Message);
+                    }
+
                 }
 
                 WriteCsv.WriteClassification(connectionObjects);
 
-                List<PartObject> sortedByXConnectionObjects = partObjects.OrderBy(o => o.Domains.StartX).ToList();
+                //startTime = DateTime.Now;
 
+                //List<PartObject> sortedByXConnectionObjects = partObjects.OrderBy(o => o.Domains.StartX).ToList();
 
+                //List<ConnectionObject> connectionObjectsSortedX = clashDetection.ClashDetection(partObjects, clashTolerance);
+
+                //endTime = DateTime.Now;
+                //TimeSpan duration2 = endTime - startTime;
+
+                bboxClashIter.Content = $"Calculated Bboxes: {createdObjectsSpan.ToString()}\nBrute Force clashes: {duration.ToString()}\n";
 
                 var test = json[0]["Name"];
             }
             catch (Exception ex)
             {
                 MessageBox.Show(ex.Message);
+            }
+        }
+
+        private void Button_Click(object sender, RoutedEventArgs e)
+        {
+            OpenFileDialog openFileDialog = new OpenFileDialog();
+
+            if (openFileDialog.ShowDialog() == true)
+            {
+                string selectedFileName = openFileDialog.FileName;
+                ConfigLocationTextBox.Text = selectedFileName;
+            }
+        }
+
+        private void Button_Click_1(object sender, RoutedEventArgs e)
+        {
+            OpenFileDialog openFileDialog = new OpenFileDialog();
+
+            if (openFileDialog.ShowDialog() == true)
+            {
+                string selectedFileName = openFileDialog.FileName;
+                ListsLocationTextBox.Text = selectedFileName;
             }
         }
     }

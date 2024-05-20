@@ -114,6 +114,13 @@ namespace ConnectionClassifier.ParseJson
             var criteria = decision.Criteria;
             int fullfilledCriteria = 0;
             int criteriaCount = criteria.Count;
+            int orXCount = 0;
+
+            if (decision.ContainsKey("Number"))
+            {
+                orXCount = decision.Number;
+            }
+
 
             foreach(var child in criteria)
             {
@@ -142,7 +149,17 @@ namespace ConnectionClassifier.ParseJson
                     else
                     {
                         return false;
-                    }  
+                    }
+                case "ORX":
+                    if(fullfilledCriteria >= orXCount)
+                    {
+                        return true;
+                    }
+                    else
+                    {
+                        return false;
+                    }
+
                 default:
                     throw new Exception($"No condition: {condition}");
             }
@@ -167,6 +184,9 @@ namespace ConnectionClassifier.ParseJson
                 case "PropertySet":
                     criteriaCheck = PropertySet(connectionObject, criteria, tolerance);
                     return criteriaCheck;
+                case "ValueStringCheck":
+                    criteriaCheck = ValueStringCheck(connectionObject, criteria, tolerance);
+                    return criteriaCheck;
                 default:
                     throw new Exception($"No Criteria Rule: {rule}");                    
             }
@@ -190,7 +210,6 @@ namespace ConnectionClassifier.ParseJson
                     throw new Exception($"No Part Rule: {part}");
             }
         }
-
 
         public bool PropertyInList(ConnectionObject connectionObject, dynamic criteria, dynamic jsonLists)
         {
@@ -254,9 +273,70 @@ namespace ConnectionClassifier.ParseJson
                     {
                         return false;
                     }
+                case "<":
+                    if (partPropertyValue < value)
+                    {
+                        return true;
+                    }
+                    else
+                    {
+                        return false;
+                    }
+                case "<=":
+                    if(partPropertyValue <= value)
+                    {
+                        return true;
+                    }
+                    else
+                    {
+                        return false;
+                    }
+                case ">=":
+                    if (partPropertyValue >= value)
+                    {
+                        return true;
+                    }
+                    else
+                    {
+                        return false;
+                    }
                 default:
                     throw new Exception($"No condition found: {condition}");
             }
+        }
+
+        public bool ValueStringCheck(ConnectionObject connectionObject, dynamic criteria, int tolerance)
+        {
+            string partString = criteria.Part;
+            string property = criteria.Property;
+            string condition = criteria.Condition;
+            var value = criteria.Value.Value;
+
+            var part = GetPart(partString, connectionObject);
+            dynamic dynamicObj = part;
+            var partProperty = dynamicObj.GetType().GetProperty(property)?.GetValue(dynamicObj, null)?.ToString();
+
+            if (partProperty == null)
+            {
+                throw new Exception($"No property found: {property}");
+            }
+
+            switch (condition)
+            {
+                case "=":
+                    if(partProperty.Equals(value))
+                    {
+                        return true;
+                    }
+                    else
+                    {
+                        return false;
+                    }
+                default:
+                    throw new Exception($"No condition found: {condition}");
+            }
+
+
         }
 
         public bool TwoPropertyCheck(ConnectionObject connectionObject, dynamic criteria, int tolerance)
@@ -269,21 +349,34 @@ namespace ConnectionClassifier.ParseJson
 
             var part1 = GetPart(part1String, connectionObject);
             dynamic dynamicObj = part1;
-            var part1Property = dynamicObj.GetType().GetProperty(property1)?.GetValue(dynamicObj, null)?.ToString();
+            var part1PropertyString = dynamicObj.GetType().GetProperty(property1)?.GetValue(dynamicObj, null)?.ToString();
+
 
             var part2 = GetPart(part2String, connectionObject);
             dynamic dynamicObj2 = part2;
-            var part2Property = dynamicObj2.GetType().GetProperty(property2)?.GetValue(dynamicObj2, null)?.ToString();
+            var part2PropertyString = dynamicObj2.GetType().GetProperty(property2)?.GetValue(dynamicObj2, null)?.ToString();
 
-            if (part1Property == null || part2Property == null) 
+            if (part1PropertyString == null || part2PropertyString == null)
             {
-                throw new Exception($"No property found, Property1: {property1} {part1Property}, Property2: {property2} {part2Property}");
+                throw new Exception($"No property found, Property1: {property1} {part1PropertyString}, Property2: {property2} {part2PropertyString}");
             }
+
+            double part1Property = double.Parse(part1PropertyString);
+            double part2Property = double.Parse(part2PropertyString);
 
             switch (condition)
             {
                 case "=":
                     if (part1Property == part2Property)
+                    {
+                        return true;
+                    }
+                    else
+                    {
+                        return false;
+                    }
+                case "<":
+                    if (part1Property < part2Property)
                     {
                         return true;
                     }

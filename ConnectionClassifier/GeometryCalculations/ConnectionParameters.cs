@@ -10,7 +10,7 @@ namespace ConnectionClassifier.GeometryCalculations
 {
     internal class ConnectionParameters
     {
-        public void CalculateConnectionParameters(ConnectionObject connectionObject) 
+        public void CalculateConnectionParameters(ConnectionObject connectionObject, int roundingTolerance) 
         {
             PartObject part1 = connectionObject.Part1;
             PartObject part2 = connectionObject.Part2;
@@ -18,14 +18,15 @@ namespace ConnectionClassifier.GeometryCalculations
             Box3d box1 = part1.BBOX;
             Box3d box2 = part2.BBOX;
 
-            CalculateOnPlane(box1, box2, connectionObject, connectionObject.Plane1Parameters);
-            CalculateOnPlane(box2, box1, connectionObject, connectionObject.Plane2Parameters);
-            CalculateConnectionAngles(box1, box2, connectionObject);
+            CalculateOnPlane(box1, box2, connectionObject, connectionObject.Plane1Parameters, roundingTolerance);
+            CalculateOnPlane(box2, box1, connectionObject, connectionObject.Plane2Parameters, roundingTolerance);
+            CalculateConnectionAngles(box1, box2, connectionObject, roundingTolerance);
         }
 
         public void CalculateOnPlane(Box3d box1, Box3d box2, 
             ConnectionObject connectionObject, 
-            PlaneParameters planeParameters) 
+            PlaneParameters planeParameters,
+            int roundingTolerance) 
         {
             Coord3d coord3D = box1.LocalCoord();
 
@@ -82,17 +83,17 @@ namespace ConnectionClassifier.GeometryCalculations
                 maxZ2 = Math.Max(maxZ2, point.Z);
             }
 
-            planeParameters.xStart = Math.Max(minX1, minX2) - Math.Min(minX1, minX2);
-            planeParameters.xOverlap = Math.Min(maxX1, maxX2) - Math.Max(minX1, minX2);
-            planeParameters.xEnd = Math.Max(maxX1, maxX2) - Math.Min(maxX1, maxX2);
+            planeParameters.xStart = Math.Round(Math.Max(minX1, minX2) - Math.Min(minX1, minX2), roundingTolerance);
+            planeParameters.xOverlap = Math.Round(Math.Min(maxX1, maxX2) - Math.Max(minX1, minX2), roundingTolerance);
+            planeParameters.xEnd = Math.Round(Math.Max(maxX1, maxX2) - Math.Min(maxX1, maxX2), roundingTolerance);
 
-            planeParameters.yStart = Math.Max(minY1, minY2) - Math.Min(minY1, minY2);
-            planeParameters.yOverlap = Math.Min(maxY1, maxY2) - Math.Max(minY1, minY2);
-            planeParameters.yEnd = Math.Max(maxY1, maxY2) - Math.Min(maxY1, maxY2);
+            planeParameters.yStart = Math.Round(Math.Max(minY1, minY2) - Math.Min(minY1, minY2), roundingTolerance);
+            planeParameters.yOverlap = Math.Round(Math.Min(maxY1, maxY2) - Math.Max(minY1, minY2), roundingTolerance);
+            planeParameters.yEnd = Math.Round(Math.Max(maxY1, maxY2) - Math.Min(maxY1, maxY2), roundingTolerance);
 
-            planeParameters.zStart = Math.Max(minZ1, minZ2) - Math.Min(minZ1, minZ2);
-            planeParameters.zOverlap = Math.Min(maxZ1, maxZ2) - Math.Max(minZ1, minZ2);
-            planeParameters.zEnd = Math.Max(maxZ1, maxZ2) - Math.Min(maxZ1, maxZ2);
+            planeParameters.zStart = Math.Round(Math.Max(minZ1, minZ2) - Math.Min(minZ1, minZ2), roundingTolerance);
+            planeParameters.zOverlap = Math.Round(Math.Min(maxZ1, maxZ2) - Math.Max(minZ1, minZ2), roundingTolerance);
+            planeParameters.zEnd = Math.Round(Math.Max(maxZ1, maxZ2) - Math.Min(maxZ1, maxZ2), roundingTolerance);
 
             // Calculate bbox for bbox overlaps
             double xStart = Math.Max(minX1, minX2);
@@ -183,13 +184,20 @@ namespace ConnectionClassifier.GeometryCalculations
             Point3d point2CenterGlobal = point2Center.ConvertToGlobal();
 
             planeParameters.ConnectionStartPoint = point1CenterGlobal;
+            planeParameters.ConnectionStartPoint.X = Math.Round(planeParameters.ConnectionStartPoint.X, roundingTolerance);
+            planeParameters.ConnectionStartPoint.Y = Math.Round(planeParameters.ConnectionStartPoint.Y, roundingTolerance);
+            planeParameters.ConnectionStartPoint.Z = Math.Round(planeParameters.ConnectionStartPoint.Z, roundingTolerance);
+
             planeParameters.ConnectionEndPoint = point2CenterGlobal;
+            planeParameters.ConnectionEndPoint.X = Math.Round(planeParameters.ConnectionEndPoint.X, roundingTolerance);
+            planeParameters.ConnectionEndPoint.Y = Math.Round(planeParameters.ConnectionEndPoint.Y, roundingTolerance);
+            planeParameters.ConnectionEndPoint.Z = Math.Round(planeParameters.ConnectionEndPoint.Z, roundingTolerance);
 
             //objectDrawer.DrawPoint3d(point1CenterGlobal);
             //objectDrawer.DrawPoint3d(point2CenterGlobal);
         }
 
-        public void CalculateConnectionAngles(Box3d box1, Box3d box2, ConnectionObject connectionObject)
+        public void CalculateConnectionAngles(Box3d box1, Box3d box2, ConnectionObject connectionObject, int roundingTolerance)
         {
             var x1 = box1.V1;
             var y1 = box1.V2;
@@ -213,15 +221,15 @@ namespace ConnectionClassifier.GeometryCalculations
 
             ConnectionAnglesClass connectionAngles = connectionObject.ConnectionAngles;
 
-            connectionAngles.AngleXX = XX;
-            connectionAngles.AngleXY = XY;
-            connectionAngles.AngleXZ = XZ;
-            connectionAngles.AngleYX = YX;
-            connectionAngles.AngleYY = YY;
-            connectionAngles.AngleYZ = YZ;
-            connectionAngles.AngleZX = ZX;
-            connectionAngles.AngleZY = ZY;
-            connectionAngles.AngleZZ = ZZ;
+            connectionAngles.AngleXX = Math.Round(XX, roundingTolerance);
+            connectionAngles.AngleXY = Math.Round(XY, roundingTolerance);
+            connectionAngles.AngleXZ = Math.Round(XZ, roundingTolerance);
+            connectionAngles.AngleYX = Math.Round(YX, roundingTolerance);
+            connectionAngles.AngleYY = Math.Round(YY, roundingTolerance);
+            connectionAngles.AngleYZ = Math.Round(YZ, roundingTolerance);
+            connectionAngles.AngleZX = Math.Round(ZX, roundingTolerance);
+            connectionAngles.AngleZY = Math.Round(ZY, roundingTolerance);
+            connectionAngles.AngleZZ = Math.Round(ZZ, roundingTolerance);
         }
     }
 }

@@ -15,8 +15,8 @@ namespace ConnectionClassifier.GeometryCalculations
         public double Length { get; set; }
         public Coord3d CS { get; set; }
         public Tekla.Structures.Model.Part modelObjectPart { get; set; }
-
-
+        public double BboxRadius { get; set; }
+        public double CogZ { get; set; }
     }
 
     public class DomainsClass

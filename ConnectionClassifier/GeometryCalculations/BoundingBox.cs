@@ -12,6 +12,7 @@ using Tekla.Structures.Model.UI;
 using Tekla.Structures;
 using System.Numerics;
 using Tekla.Structures.ModelInternal;
+using System.Windows;
 
 namespace ConnectionClassifier.GeometryCalculations
 {
@@ -43,8 +44,8 @@ namespace ConnectionClassifier.GeometryCalculations
             {
                 var edge = edgeEnumerator.Current as Edge;
 
-                Point start = edge.StartPoint;
-                Point end = edge.EndPoint;
+                Tekla.Structures.Geometry3d.Point start = edge.StartPoint;
+                Tekla.Structures.Geometry3d.Point end = edge.EndPoint;
 
                 Point3d startPoint = new Point3d(start.X, start.Y,start.Z);
                 Point3d endPoint = new Point3d(end.X, end.Y, end.Z);
@@ -160,8 +161,78 @@ namespace ConnectionClassifier.GeometryCalculations
             return bbox;
         }
 
-        public List<PartObject> GetClassificationPartObjects()
+        public double CalculateBboxRadius(Box3d box)
         {
+            double height = box.L1 / 2;
+            double width = box.L2 / 2;
+            double length = box.L3 / 2;
+            double diagonal = Math.Sqrt(Math.Pow(height, 2) + Math.Pow(width, 2) + Math.Pow(length, 2));
+            return diagonal;
+        }
+
+
+        public static void UpdateModelParameters(Box3d box, PartObject partObject, ModelParameters modelParameters)
+        {
+            Point3d centerPoint = box.Center.ConvertToGlobal();
+
+            if(centerPoint.X > modelParameters.maxX)
+            {
+                modelParameters.maxX = centerPoint.X;
+            }
+            if(centerPoint.X < modelParameters.minX)
+            {
+                modelParameters.minX = centerPoint.X;
+            }
+            if (centerPoint.Y > modelParameters.maxY)
+            {
+                modelParameters.maxY = centerPoint.Y;
+            }
+            if (centerPoint.Y < modelParameters.minY)
+            {
+                modelParameters.minY = centerPoint.Y;
+            }
+            if (centerPoint.Z > modelParameters.maxZ)
+            {
+                modelParameters.maxZ = centerPoint.Z;
+            }
+            if (centerPoint.Z < modelParameters.minZ)
+            {
+                modelParameters.minZ = centerPoint.Z;
+            }
+
+            double lengthX = partObject.Domains.EndX - partObject.Domains.StartX;
+            double lengthY = partObject.Domains.EndY - partObject.Domains.StartY;
+            double lengthZ = partObject.Domains.EndZ - partObject.Domains.StartZ;
+
+            if (lengthX > modelParameters.maxXLength)
+            {
+                modelParameters.maxXLength = lengthX;
+            }
+            if (lengthY > modelParameters.maxYLength)
+            {
+                modelParameters.maxYLength = lengthY;
+            }
+            if (lengthZ > modelParameters.maxZLength)
+            {
+                modelParameters.maxZLength = lengthZ;
+            }
+        }
+
+        public (List<PartObject>, ModelParameters) GetClassificationPartObjects()
+        {
+            ModelParameters modelParameters = new ModelParameters()
+            {
+                minX = double.MaxValue,
+                minY = double.MaxValue,
+                minZ = double.MaxValue,
+                maxX = double.MinValue,
+                maxY = double.MinValue,
+                maxZ = double.MinValue,
+                maxXLength = 0,
+                maxYLength = 0,
+                maxZLength = 0,
+            };
+
             List<PartObject> partObjects = new List<PartObject>();
 
             Model model = new Model();
@@ -173,48 +244,66 @@ namespace ConnectionClassifier.GeometryCalculations
 
             foreach (Part obj in listObjects)
             {
-                partCount++;
-                var plane = CreateCoord3DFromTeklaCS(obj);
-                HashSet<Point3d> pointList = GetSolidPoints(obj);
+                try
+                {
+                    partCount++;
+                    var plane = CreateCoord3DFromTeklaCS(obj);
+                    HashSet<Point3d> pointList = GetSolidPoints(obj);
 
-                DomainsClass globalMinMax = GetMinMaxCoordinates(pointList);
+                    DomainsClass globalMinMax = GetMinMaxCoordinates(pointList);
 
-                var bbox = CreateBboxInPlane(pointList, plane, obj);
+                    var bbox = CreateBboxInPlane(pointList, plane, obj);
 
-                var drawer = new DrawObjectsInTekla();
-                //drawer.DrawBBox(bbox);
+                    var drawer = new DrawObjectsInTekla();
+                    //drawer.DrawBBox(bbox);
 
-                string guid = obj.Identifier.GUID.ToString();
+                    string guid = obj.Identifier.GUID.ToString();
 
-                string profile = obj.Profile.ProfileString;
-                string material = obj.Material.MaterialString;
-                string tekla_class = obj.Class;
+                    string profile = obj.Profile.ProfileString;
+                    string material = obj.Material.MaterialString;
+                    string tekla_class = obj.Class;
 
-                double width = double.NaN;
-                obj.GetReportProperty("WIDTH", ref width);
+                    double width = double.NaN;
+                    obj.GetReportProperty("WIDTH", ref width);
 
-                double height = double.NaN;
-                obj.GetReportProperty("HEIGHT", ref height);
+                    double height = double.NaN;
+                    obj.GetReportProperty("HEIGHT", ref height);
 
-                double length = double.NaN;
-                obj.GetReportProperty("LENGTH", ref length);
+                    double length = double.NaN;
+                    obj.GetReportProperty("LENGTH", ref length);
 
-                PartObject partObject = new PartObject() { 
-                    BBOX = bbox, 
-                    Domains = globalMinMax,
-                    CS = plane, 
-                    GUID = guid, 
-                    Profile = profile,
-                    Material = material,
-                    TeklaClass= tekla_class,
-                    Height = height,
-                    Width = width,
-                    Length = length,
-                    modelObjectPart = obj};
+                    double radius = CalculateBboxRadius(bbox);
 
-                partObjects.Add(partObject);
+                    double cogZ = bbox.Center.ConvertToGlobal().Z;
+
+                    PartObject partObject = new PartObject()
+                    {
+                        BBOX = bbox,
+                        Domains = globalMinMax,
+                        CS = plane,
+                        GUID = guid,
+                        Profile = profile,
+                        Material = material,
+                        TeklaClass = tekla_class,
+                        Height = height,
+                        Width = width,
+                        Length = length,
+                        modelObjectPart = obj,
+                        BboxRadius = radius,
+                        CogZ = cogZ
+                    };
+
+                    UpdateModelParameters(bbox, partObject, modelParameters);
+
+                    partObjects.Add(partObject);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show(ex.Message);
+                }
+
             }
-            return partObjects;
+            return (partObjects, modelParameters);
         }
         //public bboxOverlap
     }

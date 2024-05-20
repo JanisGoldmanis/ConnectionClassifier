@@ -44,6 +44,19 @@ namespace ConnectionClassifier.GeometryCalculations
             var mainPointList = mainPart.BBOX.ListOfPoints;
             var secondaryPointList = secondaryObject.BBOX.ListOfPoints;
 
+            var point1 = mainPart.BBOX.Center;
+            var point2 = secondaryObject.BBOX.Center;
+
+            double distance = point1.DistanceTo(point2);
+
+            double radius1 = mainPart.BboxRadius;
+            double radius2 = secondaryObject.BboxRadius;
+
+            if (distance > radius1 + radius2 + clashTolerance)
+            {
+                return false;
+            }
+
             string[] planeTypes = new string[]{ "XY", "XZ", "YZ" };
 
             List<string[]> mainVectors = new List<string[]>();
@@ -155,6 +168,10 @@ namespace ConnectionClassifier.GeometryCalculations
                 {
                     x = true;
                 }
+                if (!x)
+                {
+                    return false;
+                }
 
                 bool y = false;
                 if (mainMaxSecondVector <= secondaryMaxSecondVector && mainMaxSecondVector >= secondaryMinSecondVector)
@@ -166,26 +183,22 @@ namespace ConnectionClassifier.GeometryCalculations
                 {
                     y = true;
                 }    
-                
-                if (x && y)
-                {
-                    overlappingPlanes++;
-                }
-                else
+
+                if (!y)
                 {
                     return false;
                 }
+                overlappingPlanes++;
             }
             if (overlappingPlanes == 3)
             {
                 return true;
             }
-
             return false;
         }
 
 
-        public List<ConnectionObject> ClashDetectionBruteForce(List<PartObject> partObjectsSource, int clashTolerance) 
+        public List<ConnectionObject> ClashDetectionBruteForce(List<PartObject> partObjectsSource, int clashTolerance, int roundingTolerance) 
         {
             List<PartObject> partObjects = new List<PartObject>(partObjectsSource);
 
@@ -195,16 +208,21 @@ namespace ConnectionClassifier.GeometryCalculations
 
             ConnectionParameters connectionParameter = new ConnectionParameters();
 
+            int i = 0;
+
             while (partObjects.Count > 1) 
             {
+                i++;
                 PartObject mainObject = partObjects.First();
                 partObjects.RemoveAt(0);
 
                 foreach (PartObject secondaryObject in partObjects)
                 {
+                    //bool clashGeometri = mainObject.BBOX.Intersects(secondaryObject.BBOX);
                     bool clash1 = TwoPartObjectsClash(mainObject, secondaryObject, clashTolerance);
                     bool clash2 = TwoPartObjectsClash(secondaryObject, mainObject, clashTolerance);
                     if (clash1 && clash2)
+                    //if (clashGeometri)
                     {
                         ConnectionObject connectionObject = new ConnectionObject()
                         {
@@ -216,14 +234,65 @@ namespace ConnectionClassifier.GeometryCalculations
                             ConnetionType = ""                            
                         };
 
-                        connectionParameter.CalculateConnectionParameters(connectionObject);
+                        connectionParameter.CalculateConnectionParameters(connectionObject, roundingTolerance);
                         connectionObjects.Add(connectionObject);
 
                     }
                 }
                 Trace.WriteLine(partObjects.Count);
+
+                if(i == 10000)
+                {
+
+                }
             }
             return connectionObjects;
-        }       
+        }
+
+
+        public List<ConnectionObject> ClashDetection(List<PartObject> partObjectsSource, int clashTolerance, int roundingTolerance)
+        {
+            List<PartObject> partObjects = new List<PartObject>(partObjectsSource);
+
+            List<ConnectionObject> connectionObjects = new List<ConnectionObject>();
+
+            ConnectionParameters connectionParameter = new ConnectionParameters();
+
+            while (partObjects.Count > 1)
+            {
+                PartObject mainObject = partObjects.First();
+                partObjects.RemoveAt(0);
+
+
+                foreach (PartObject secondaryObject in partObjects)
+                {
+                    if (secondaryObject.Domains.StartX > mainObject.Domains.EndX)
+                    {
+                        break;
+                    }
+
+                    bool clash1 = TwoPartObjectsClash(mainObject, secondaryObject, clashTolerance);
+                    bool clash2 = TwoPartObjectsClash(secondaryObject, mainObject, clashTolerance);
+                    if (clash1 && clash2)
+                    {
+                        ConnectionObject connectionObject = new ConnectionObject()
+                        {
+                            Part1 = mainObject,
+                            Part2 = secondaryObject,
+                            Plane1Parameters = new PlaneParameters(),
+                            Plane2Parameters = new PlaneParameters(),
+                            ConnectionAngles = new ConnectionAnglesClass(),
+                            ConnetionType = ""
+                        };
+
+                        connectionParameter.CalculateConnectionParameters(connectionObject, roundingTolerance);
+                        connectionObjects.Add(connectionObject);
+
+                    }
+                }
+                
+            }
+            return connectionObjects;
+        }
     }
 }
