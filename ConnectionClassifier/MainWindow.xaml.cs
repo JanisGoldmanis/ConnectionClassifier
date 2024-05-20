@@ -47,24 +47,7 @@ namespace ConnectionClassifier
                 ListsLocationTextBox.Text = "C:\\Users\\janis.goldmanis\\Downloads\\ConnectionClassificationConfig\\lists.json";
             }
         }
-
-        //private void Button_Click(object sender, RoutedEventArgs e)
-        //{
-        //    Model model = new Model();
-
-        //    if (!model.GetConnectionStatus())
-        //    {
-        //        MessageBox.Show("Tekla Structures not connected");
-        //        return;
-        //    }
-
-        //    ModelInfo modelInfo = model.GetInfo();
-        //    string name = modelInfo.ModelName;
-
-        //    MessageBox.Show(string.Format("Hello world! Current model is named: {0}", name));
-
-        //    Operation.DisplayPrompt(string.Format("Hello world! Current model is named: {0}", name));
-        //}
+      
         public static List<int>[][][] GetModelLists(ModelParameters modelParameters, List<PartObject> partObjects, double tolerance)
         {
             double maxXSize = modelParameters.maxXLength + tolerance;
@@ -79,14 +62,8 @@ namespace ConnectionClassifier
             int zCount = (int)Math.Ceiling(zLength / maxZSize);
 
             List<int>[][][] data = new List<int>[partObjects.Count][][];
-
-
-
-
             return data;
         }
-
-
 
         public void Button_Click_6(object sender, RoutedEventArgs e)
         {
@@ -107,12 +84,6 @@ namespace ConnectionClassifier
 
                 var clashDetection = new Clash();
 
-
-                //// Subscribe to the ClashProgress event
-                //clashDetection.ClashProgress += ClashDetection_ClashProgress;
-
-
-
                 int roundingTolerance = 1;
 
                 List<ConnectionObject> connectionObjects = clashDetection.ClashDetectionBruteForce(partObjects, clashTolerance, roundingTolerance);
@@ -128,8 +99,6 @@ namespace ConnectionClassifier
                 var jsonLists = ParseJson.ParseJson.ReadJsonFile(jsonListsLocation)["lists"];
 
                 var jsonParser = new ParseJson.ParseJson();
-
-
 
                 Dictionary<string, int> typeCount = new Dictionary<string, int>();
 
@@ -154,15 +123,6 @@ namespace ConnectionClassifier
                 }
 
                 WriteCsv.WriteClassification(connectionObjects);
-
-                //startTime = DateTime.Now;
-
-                //List<PartObject> sortedByXConnectionObjects = partObjects.OrderBy(o => o.Domains.StartX).ToList();
-
-                //List<ConnectionObject> connectionObjectsSortedX = clashDetection.ClashDetection(partObjects, clashTolerance);
-
-                //endTime = DateTime.Now;
-                //TimeSpan duration2 = endTime - startTime;
 
                 bboxClashIter.Content = $"Calculated Bboxes: {createdObjectsSpan.ToString()}\nBrute Force clashes: {duration.ToString()}\n";
 
